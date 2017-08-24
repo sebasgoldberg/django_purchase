@@ -1,3 +1,8 @@
+INSTALLATION
+------------
+
+  pip install --process-dependency-links git+https://github.com/sebasgoldberg/django_purchase.git
+
 PURCHASE_LOADER setting
 -----------------------
 Example:
