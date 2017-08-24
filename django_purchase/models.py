@@ -13,7 +13,6 @@ class UOM(models.Model):
     name = models.CharField(max_length=3, verbose_name=_('Nombre'))
 
 class ProductUOM(models.Model):
-    name = models.CharField(max_length=3, verbose_name=_('Nombre'), null=True)
     product = models.ForeignKey(Product, verbose_name=_('Producto'), on_delete=models.PROTECT)
     UOM = models.ForeignKey(UOM, verbose_name=_('UM'), on_delete=models.PROTECT)
 
