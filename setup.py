@@ -38,6 +38,6 @@ setup(
         'django_conditions',
         ],
     dependency_links=[
-        'git+http://github.com/sebasgoldberg/django_conditions.git#egg=django_conditions'
+        'git+http://github.com/sebasgoldberg/django_conditions.git#egg=django_conditions-0.1'
         ]
 )
