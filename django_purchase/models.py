@@ -20,7 +20,8 @@ class VendorProduct(models.Model):
     partner = models.ForeignKey(Partner, verbose_name=_('Proveedor'), on_delete=models.PROTECT)
     name = models.CharField(max_length=255, verbose_name=_('Nombre'))
     product_uom = models.ForeignKey(ProductUOM, verbose_name=_('Producto y UM'), on_delete=models.PROTECT)
-    quantity = models.PositiveIntegerField(_('Cantidad'),
+    quantity = models.DecimalField(max_digits=8, decimal_places=2,
+        verbose_name=_('Cantidad'),
         help_text=_('La cantidad en la unidad de medida de referencia'))
 
 class ShippingMethod(models.Model):
@@ -35,3 +36,14 @@ class VendorProductCondition(Condition):
 
 class VendorShippingMethodCondition(Condition):
     instance = models.ForeignKey(VendorShippingMethod, verbose_name=_('Forma de envío'), on_delete=models.PROTECT)
+
+class PurchaseList(models.Model):
+    name = models.CharField(max_length=100, verbose_name=_('Nombre'))
+    date = models.DateField(_('Fecha'), default=date.today)
+
+class PurchaseListItem(models.Model):
+    purchase_list = models.ForeignKey(PurchaseList, verbose_name=_('Lista de compras'), on_delete=models.PROTECT)
+    product_uom = models.ForeignKey(ProductUOM, verbose_name=_('Producto y UM'), on_delete=models.PROTECT)
+    quantity = models.DecimalField(max_digits=8, decimal_places=2,
+        verbose_name=_('Cantidad'))
+
