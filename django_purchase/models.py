@@ -102,16 +102,18 @@ class PurchaseListItem(models.Model):
         verbose_name=_('Cantidad'))
 
     def resolve_purchase_with(self, vproduct, quantity):
-        PurchaseListItemResolution.objects.create(
+        self.resolutions.create(
             item=self,
             vendor_product=vproduct,
             quantity=quantity
             )
 
 class PurchaseListItemResolution(models.Model):
-    item = models.OneToOneField(PurchaseListItem, on_delete=models.PROTECT,
-        editable=False, related_name='resolution', unique=True)
+    item = models.ForeignKey(PurchaseListItem, on_delete=models.PROTECT,
+        editable=False, related_name='resolutions')
     vendor_product = models.ForeignKey(VendorProduct, verbose_name=_('Producto Proveedor'), on_delete=models.PROTECT)
     quantity = models.DecimalField(max_digits=8, decimal_places=2,
         verbose_name=_('Cantidad'))
 
+    class Meta:
+        unique_together = (("item", "vendor_product"),)

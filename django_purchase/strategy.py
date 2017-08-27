@@ -59,10 +59,9 @@ class PurchasePlanner:
                     LpVariable("CANTIDAD_PROD_%s_DEL_PROVEEDOR_%s_PARA_ITEM_%s" %
                         (vproduct.id, item.id, vendor.id), 0, None, LpInteger)
                 
-                I_VP[item.id] = {}
+                I_VP[item.id] = I_VP.get( item.id, {} )
                 I_VP[item.id][vproduct.id] = \
                     V_I_VP[vendor.id][item.id][vproduct.id]
-
 
         model += total_cost - lpSum([cost for vendor_id,cost in vendor_cost.items()]) == 0, \
             "El costo total es la suma de los costos por vendedor."
@@ -78,15 +77,15 @@ class PurchasePlanner:
 
         for vendor_id, to_vendor in buy_to_vendor.items():
             model += vendor_cost[vendor_id] - to_vendor*INFINITE <= 0, \
-                "Mecanismo para determinar al proveedor que le compramos"
+                "Mecanismo para determinar si le compramos la proveedor %s" % vendor_id
         
         for item_id, vproducts_for_item in I_VP.items():
             item = items[item_id]
             model += float(item.quantity) - lpSum([quan*float(vproducts[vproduct_id].get_content())
                 for vproduct_id, quan in vproducts_for_item.items()]) <= 0, \
-                    "La cantidad a comprar debe ser mayor o igual a la cantidad solicitada"
+                    "La cantidad a comprar para el item %s debe ser mayor o igual a la cantidad solicitada" % item_id
 
-        #model.writeLP("/tmp/agroeco.lp")
+        model.writeLP("/tmp/agroeco.lp")
 
         # Redirige la salida a /dev/null
         model.setSolver()
