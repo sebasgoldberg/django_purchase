@@ -12,11 +12,14 @@ Product = loader.get_product_model()
 Partner = loader.get_partner_model()
 
 class UOM(models.Model):
-    name = models.CharField(max_length=3, verbose_name=_('Nombre'))
+    name = models.CharField(max_length=3, verbose_name=_('Nombre'), unique=True)
 
 class ProductUOM(models.Model):
     product = models.ForeignKey(Product, verbose_name=_('Producto'), on_delete=models.PROTECT)
     uom = models.ForeignKey(UOM, verbose_name=_('UM'), on_delete=models.PROTECT)
+
+    class Meta:
+        unique_together = (("product", "uom"),)
 
     def get_vendors_products(self):
         return self.vendorproduct_set.all()
@@ -44,6 +47,9 @@ class VendorProduct(models.Model):
         verbose_name=_('Cantidad'),
         help_text=_('La cantidad en la unidad de medida de referencia'))
 
+    class Meta:
+        unique_together = (("vendor", "name"),)
+
     def set_price(self, price):
         VendorProductCondition(
             instance=self,
@@ -59,7 +65,7 @@ class VendorProduct(models.Model):
 
 
 class ShippingMethod(models.Model):
-    name = models.CharField(max_length=100, verbose_name=_('Nombre'))
+    name = models.CharField(max_length=100, verbose_name=_('Nombre'), unique=True)
 
 class VendorShippingMethod(models.Model):
     vendor = models.ForeignKey(Vendor, verbose_name=_('Proveedor'), on_delete=models.PROTECT)
@@ -70,6 +76,9 @@ class VendorShippingMethod(models.Model):
             instance=self,
             value=price
         ).save()
+
+    class Meta:
+        unique_together = (("vendor", "shipping_method"),)
 
 
 class VendorProductCondition(Condition):
@@ -89,6 +98,20 @@ class PurchaseList(models.Model):
 class PurchaseListItem(models.Model):
     purchase_list = models.ForeignKey(PurchaseList, verbose_name=_('Lista de compras'), on_delete=models.PROTECT)
     product_uom = models.ForeignKey(ProductUOM, verbose_name=_('Producto y UM'), on_delete=models.PROTECT)
+    quantity = models.DecimalField(max_digits=8, decimal_places=2,
+        verbose_name=_('Cantidad'))
+
+    def resolve_purchase_with(self, vproduct, quantity):
+        PurchaseListItemResolution.objects.create(
+            item=self,
+            vendor_product=vproduct,
+            quantity=quantity
+            )
+
+class PurchaseListItemResolution(models.Model):
+    item = models.OneToOneField(PurchaseListItem, on_delete=models.PROTECT,
+        editable=False, related_name='resolution', unique=True)
+    vendor_product = models.ForeignKey(VendorProduct, verbose_name=_('Producto Proveedor'), on_delete=models.PROTECT)
     quantity = models.DecimalField(max_digits=8, decimal_places=2,
         verbose_name=_('Cantidad'))
 

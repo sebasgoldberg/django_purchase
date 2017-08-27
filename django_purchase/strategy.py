@@ -98,3 +98,9 @@ class PurchasePlanner:
             raise ModeloLinealNoResuelto(_(u'No fue posible determinar cómo realizar la compra.'))
 
 
+        for item_id, vproducts_for_item in I_VP.items():
+            item = items[item_id]
+            for vproduct_id, quan in vproducts_for_item.items():
+                vproduct = vproducts[vproduct_id]
+                if quan.value() > 0:
+                    item.resolve_purchase_with(vproduct, quan.value())

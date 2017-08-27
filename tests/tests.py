@@ -79,3 +79,7 @@ class PurchasePlannerTestCase(TestCase):
             [vp1.product_uom, 10],
             ])
 
+        self.assertEqual(plist.purchaselistitem_set.count(), 1)
+        item = plist.purchaselistitem_set.first()
+        self.assertEqual(item.resolution.quantity, 1)
+        self.assertEqual(item.resolution.vendor_product.id, vp1.id)
