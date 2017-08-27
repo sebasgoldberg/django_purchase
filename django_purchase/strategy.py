@@ -85,7 +85,7 @@ class PurchasePlanner:
                 for vproduct_id, quan in vproducts_for_item.items()]) <= 0, \
                     "La cantidad a comprar para el item %s debe ser mayor o igual a la cantidad solicitada" % item_id
 
-        model.writeLP("/tmp/agroeco.lp")
+        #model.writeLP("/tmp/agroeco.lp")
 
         # Redirige la salida a /dev/null
         model.setSolver()

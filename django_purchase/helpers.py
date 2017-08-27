@@ -1,6 +1,12 @@
 from .models import Partner, ProductUOM, UOM, VendorProduct, PurchaseList, ShippingMethod
 from .strategy import PurchasePlanner
 
+def map_multi(f, v):
+    r = []
+    for x in v:
+        r.append(f(*x))
+    return r
+
 def create_or_update_vendor_product(vendor, vendor_product_name,
     price, content_quantity, quantity_uom_name, product):
     
