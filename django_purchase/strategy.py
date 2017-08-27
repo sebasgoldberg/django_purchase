@@ -1,12 +1,15 @@
 from pulp import *
 from django.core.exceptions import ValidationError
+import math
+
+INFINITE = 9999999
 
 class ModeloLinealNoResuelto(ValidationError):
     pass
 
 class PurchasePlanner:
 
-    def create_purchase_orders(self, purchase_list):
+    def resolve_purchase(self, purchase_list):
         
         # Definimos el modelo
         model = LpProblem('Planificar estrategia de compra para lista %s' % purchase_list.id, LpMinimize)
@@ -20,19 +23,22 @@ class PurchasePlanner:
         # Definimos las variables
         
         vendor_cost = {}
-        item_quan_for_vendor = {
-            'VI': {}
-            'IV': {}
-            }
+        V_I_VP = {}
+        I_VP = {}
         buy_to_vendor = {}
         items = {}
         vendors = {}
+        vproducts = {}
 
         for item in purchase_list.get_items():
 
             items[item.id] = item
 
-            for vendor in item.product_uom.get_vendors():
+            for vproduct in item.product_uom.get_vendors_products():
+
+                vendor = vproduct.vendor
+
+                vproducts[vproduct.id] = vproduct
 
                 if vendor.id not in vendors:
 
@@ -44,45 +50,51 @@ class PurchasePlanner:
                     buy_to_vendor[vendor.id] = LpVariable(
                         "COMPRAMOS_AL_PROVEEDOR_%s" % vendor.id, 0, 1, LpInteger)
 
-                item_quan_for_vendor['VI'][vendor.id] = item_quan_for_vendor.get(
+                V_I_VP[vendor.id] = V_I_VP.get(
                     vendor.id, {})
 
-                item_quan_for_vendor['IV'][item.id][vendor.id] = \
-                    item_quan_for_vendor['VI'][vendor.id][item.id] = \
-                    LpVariable("CANTIDAD_ITEM_%s_AL_PROVEEDOR_%s" %
-                        (item.id, vendor.id), 0, None, LpInteger)
+                V_I_VP[vendor.id][item.id] = V_I_VP[vendor.id].get(
+                    item.id, {})
+                V_I_VP[vendor.id][item.id][vproduct.id] = \
+                    LpVariable("CANTIDAD_PROD_%s_DEL_PROVEEDOR_%s_PARA_ITEM_%s" %
+                        (vproduct.id, item.id, vendor.id), 0, None, LpInteger)
                 
+                I_VP[item.id] = {}
+                I_VP[item.id][vproduct.id] = \
+                    V_I_VP[vendor.id][item.id][vproduct.id]
+
 
         model += total_cost - lpSum([cost for vendor_id,cost in vendor_cost.items()]) == 0, \
             "El costo total es la suma de los costos por vendedor."
 
-        for vendor_id, items_for_vendor in item_quan_for_vendor['VI']:
+        for vendor_id, items_for_vendor in V_I_VP.items():
             vendor = vendors[vendor_id]
             model += vendor_cost[vendor_id] - lpSum(
-                [quan*vendor.get_price_for_product(items[item_id].product_uom)
-                    for item_id,quan in items_for_vendor.items()]) - \
-                        vendors[vendor_id].get_delivery_price()*buy_to_vendor[vendor_id] == 0, \
+                [quan*float(vproducts[vproduct_id].get_price())
+                    for item_id, vproduct_for_item in items_for_vendor.items() \
+                        for vproduct_id, quan in vproduct_for_item.items() ]) - \
+                        float(vendors[vendor_id].get_min_delivery_price())*buy_to_vendor[vendor_id] == 0, \
                     "La suma de las cantidades por sus precios de los productos más el costo de envio, es igual al costo total del vendedor %s" % vendor_id
 
         for vendor_id, to_vendor in buy_to_vendor.items():
-            model += vendor_cost[vendor_id] - to_vendor*INFINITO <= 0,
+            model += vendor_cost[vendor_id] - to_vendor*INFINITE <= 0, \
                 "Mecanismo para determinar al proveedor que le compramos"
         
-        for item_id, vendors_for_item in item_quan_for_vendor['IV']:
+        for item_id, vproducts_for_item in I_VP.items():
             item = items[item_id]
-            model += item.quantity - lpSum([quan*vendor.get_content_for_product(item.product_uom)
-                for vendor_id, quan in vendors_for_item.items()]) <= 0,
+            model += float(item.quantity) - lpSum([quan*float(vproducts[vproduct_id].get_content())
+                for vproduct_id, quan in vproducts_for_item.items()]) <= 0, \
                     "La cantidad a comprar debe ser mayor o igual a la cantidad solicitada"
 
-        modelo.writeLP("/tmp/agroeco.lp")
+        #model.writeLP("/tmp/agroeco.lp")
 
         # Redirige la salida a /dev/null
-        modelo.setSolver()
-        modelo.solver.msg = False
+        model.setSolver()
+        model.solver.msg = False
 
-        modelo.solve()
+        model.solve()
 
-        if not self.is_modelo_resuelto():
+        if model.status != LpStatusOptimal:
             raise ModeloLinealNoResuelto(_(u'No fue posible determinar cómo realizar la compra.'))
 
 
