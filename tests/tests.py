@@ -43,6 +43,35 @@ class LoaderTestCase(TestCase):
 
             self.assertEquals(product_model, MyProduct)
 
+class HelpersTestCase(TestCase):
+
+    def test_create_or_update_vendor_product(self):
+
+        product = Product.objects.create()
+        vendor = Vendor.objects.create()
+
+        vproduct_t0 = helpers.create_or_update_vendor_product(
+            vendor, 'VP1', 13.1, 12, 'UN', product
+        )
+
+        self.assertEquals(vproduct_t0.vendor.id, vendor.id)
+        self.assertEquals(float(vproduct_t0.get_price()), 13.1)
+        self.assertEquals(vproduct_t0.quantity, 12)
+        self.assertEquals(vproduct_t0.product_uom.uom.name, 'UN')
+        self.assertEquals(vproduct_t0.product_uom.product.id, product.id)
+
+        vproduct_t1 = helpers.create_or_update_vendor_product(
+            vendor, 'VP1', 130.1, 120, 'CX', product
+        )
+
+        self.assertEquals(vproduct_t1.vendor.id, vendor.id)
+        self.assertEquals(float(vproduct_t1.get_price()), 130.1)
+        self.assertEquals(vproduct_t1.quantity, 120)
+        self.assertEquals(vproduct_t1.product_uom.uom.name, 'CX')
+        self.assertEquals(vproduct_t1.product_uom.product.id, product.id)
+
+        self.assertEquals(vproduct_t0.id, vproduct_t1.id)
+
 
 from django_purchase.strategy import PurchasePlanner
 
