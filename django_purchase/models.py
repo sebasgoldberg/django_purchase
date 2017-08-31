@@ -95,6 +95,28 @@ class PurchaseList(models.Model):
     def get_items(self):
         return self.purchaselistitem_set.all()
 
+    def calc_total(self):
+
+        total = 0
+
+        vendors = {}
+
+        for i in self.get_items():
+            for r in i.resolutions.all():
+                total += r.vendor_product.get_price() * r.quantity
+                if r.vendor_product.vendor.id not in vendors:
+                    vendors[r.vendor_product.vendor.id] = r.vendor_product.vendor
+
+        for _, v in vendors.items():
+            total += v.get_min_delivery_price()
+
+        return total
+
+    def get_total(self):
+        
+        return self.calc_total()
+
+
 class PurchaseListItem(models.Model):
     purchase_list = models.ForeignKey(PurchaseList, verbose_name=_('Lista de compras'), on_delete=models.PROTECT)
     product_uom = models.ForeignKey(ProductUOM, verbose_name=_('Producto y UM'), on_delete=models.PROTECT)
@@ -106,7 +128,8 @@ class PurchaseListItem(models.Model):
             item=self,
             vendor_product=vproduct,
             quantity=quantity
-            )
+            )       
+        
 
 class PurchaseListItemResolution(models.Model):
     item = models.ForeignKey(PurchaseListItem, on_delete=models.PROTECT,
@@ -117,3 +140,5 @@ class PurchaseListItemResolution(models.Model):
 
     class Meta:
         unique_together = (("item", "vendor_product"),)
+
+

@@ -283,6 +283,7 @@ class PurchasePlannerTestCase(TestCase):
         self.assertEqual(item.resolutions.get(vendor_product=v1p1).quantity, 2)
         self.assertEqual(item.resolutions.get(vendor_product=v2p1).quantity, 1)
 
+        self.assertAlmostEqual(float(plist.get_total()), 2*1300.1 + 700.1 + 2*32.3)
 
     def test_two_products(self):
 
@@ -332,6 +333,7 @@ class PurchasePlannerTestCase(TestCase):
         self.assertEqual(item2.resolutions.count(), 1)
         self.assertEqual(item2.resolutions.first().quantity, 2)
 
+        self.assertAlmostEqual(float(plist.get_total()), 3*13.1 + 2*7.1 + 32.3)
 
     def test_two_products_different_vendors(self):
 
@@ -373,6 +375,7 @@ class PurchasePlannerTestCase(TestCase):
         self.assertEqual(r2.quantity, 2)
         self.assertEqual(r2.vendor_product.id, v2p2.id)
 
+        self.assertAlmostEqual(float(plist.get_total()), 13.1 + 2*7.1 + 32.3*2)
 
     def test_two_products_two_vendors(self):
 
@@ -415,4 +418,6 @@ class PurchasePlannerTestCase(TestCase):
         r2 = item2.resolutions.first()
         self.assertEqual(r2.quantity, 2)
         self.assertEqual(r2.vendor_product.id, v2p2.id)
+
+        self.assertAlmostEqual(float(plist.get_total()), 13.1 + 2*7.1 + 32.3)
 

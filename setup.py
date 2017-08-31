@@ -35,10 +35,12 @@ setup(
     ],
     install_requires=[
         'django',
-        'django_conditions==0.1',
+        # @todo
+        #'django_conditions==0.1',
         'pulp',
-        ],
-    dependency_links=[
-        'https://github.com/sebasgoldberg/django_conditions/tarball/master#egg=django_conditions-0.1'
         ]
+    # @todo
+    # dependency_links=[
+        #'https://github.com/sebasgoldberg/django_conditions/tarball/master#egg=django_conditions-0.1'
+        #]
 )

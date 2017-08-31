@@ -1,4 +1,4 @@
-from .models import Partner, ProductUOM, UOM, VendorProduct, PurchaseList, ShippingMethod
+from .models import ProductUOM, UOM, VendorProduct, PurchaseList, ShippingMethod
 from .strategy import PurchasePlanner
 
 def map_multi(f, v):
