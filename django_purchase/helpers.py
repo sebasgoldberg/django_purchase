@@ -19,7 +19,7 @@ def create_or_update_vendor_product(vendor, vendor_product_name,
     try:
 
         vproduct = vendor.vendorproduct_set.get(
-            name=vendor_product_name)
+            name=vendor_product_name, quantity=content_quantity)
 
         if vproduct.product_uom.id != product_uom.id or \
             vproduct.quantity != content_quantity:

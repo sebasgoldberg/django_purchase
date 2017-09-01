@@ -2,14 +2,11 @@ from django.db import models
 from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 from django_conditions.models import AbstractCondition as Condition
-from .loader import get_loader
 from datetime import date
 from django.core.exceptions import ValidationError
 
-loader = get_loader()
-
-Product = loader.get_product_model()
-Partner = loader.get_partner_model()
+class Product(models.Model):
+    pass
 
 class UOM(models.Model):
     name = models.CharField(max_length=3, verbose_name=_('Nombre'), unique=True)
@@ -25,10 +22,7 @@ class ProductUOM(models.Model):
         return self.vendorproduct_set.all()
 
 
-class Vendor(Partner):
-
-    class Meta:
-        proxy = True
+class Vendor(models.Model):
 
     def get_min_delivery_price(self):
         delivery_prices = VendorShippingMethodCondition.current.filter(
@@ -48,7 +42,7 @@ class VendorProduct(models.Model):
         help_text=_('La cantidad en la unidad de medida de referencia'))
 
     class Meta:
-        unique_together = (("vendor", "name"),)
+        unique_together = (("vendor", "name", 'quantity'),)
 
     def set_price(self, price):
         VendorProductCondition(
@@ -79,6 +73,10 @@ class VendorShippingMethod(models.Model):
 
     class Meta:
         unique_together = (("vendor", "shipping_method"),)
+
+    def get_price(self):
+        return VendorShippingMethodCondition.current.get(
+            instance=self).value
 
 
 class VendorProductCondition(Condition):
@@ -141,4 +139,5 @@ class PurchaseListItemResolution(models.Model):
     class Meta:
         unique_together = (("item", "vendor_product"),)
 
-
+    def get_total(self):
+        return self.vendor_product.get_price()*self.quantity
