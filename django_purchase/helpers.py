@@ -46,7 +46,7 @@ def create_purchase_list_and_resolve(products_uom_and_quantities):
     plist = PurchaseList.objects.create()
 
     for product_uom, quantity in products_uom_and_quantities:
-        plist.purchaselistitem_set.create(
+        plist.items.create(
             product_uom=product_uom, quantity=quantity)
 
     pp = PurchasePlanner()

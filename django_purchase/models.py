@@ -91,7 +91,7 @@ class PurchaseList(models.Model):
     date = models.DateField(_('Fecha'), default=date.today)
 
     def get_items(self):
-        return self.purchaselistitem_set.all()
+        return self.items.all()
 
     def calc_total(self):
 
@@ -116,7 +116,8 @@ class PurchaseList(models.Model):
 
 
 class PurchaseListItem(models.Model):
-    purchase_list = models.ForeignKey(PurchaseList, verbose_name=_('Lista de compras'), on_delete=models.PROTECT)
+    purchase_list = models.ForeignKey(PurchaseList, verbose_name=_('Lista de compras'), on_delete=models.PROTECT, 
+        related_name='items')
     product_uom = models.ForeignKey(ProductUOM, verbose_name=_('Producto y UM'), on_delete=models.PROTECT)
     quantity = models.DecimalField(max_digits=8, decimal_places=2,
         verbose_name=_('Cantidad'))

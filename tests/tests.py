@@ -21,13 +21,13 @@ class HelpersTestCase(TestCase):
         self.assertEquals(vproduct_t0.product_uom.product.id, product.id)
 
         vproduct_t1 = helpers.create_or_update_vendor_product(
-            vendor, 'VP1', 130.1, 120, 'CX', product
+            vendor, 'VP1', 130.1, 12, 'UN', product
         )
 
         self.assertEquals(vproduct_t1.vendor.id, vendor.id)
         self.assertEquals(float(vproduct_t1.get_price()), 130.1)
-        self.assertEquals(vproduct_t1.quantity, 120)
-        self.assertEquals(vproduct_t1.product_uom.uom.name, 'CX')
+        self.assertEquals(vproduct_t1.quantity, 12)
+        self.assertEquals(vproduct_t1.product_uom.uom.name, 'UN')
         self.assertEquals(vproduct_t1.product_uom.product.id, product.id)
 
         self.assertEquals(vproduct_t0.id, vproduct_t1.id)
@@ -65,8 +65,8 @@ class PurchasePlannerTestCase(TestCase):
             [vp1.product_uom, 10],
             ])
 
-        self.assertEqual(plist.purchaselistitem_set.count(), 1)
-        item = plist.purchaselistitem_set.first()
+        self.assertEqual(plist.items.count(), 1)
+        item = plist.items.first()
         self.assertEqual(item.resolutions.first().quantity, 1)
         self.assertEqual(item.resolutions.first().vendor_product.id, vp1.id)
 
@@ -104,9 +104,9 @@ class PurchasePlannerTestCase(TestCase):
             [vp1.product_uom, 30],
             ])
 
-        self.assertEqual(plist.purchaselistitem_set.count(), 1)
+        self.assertEqual(plist.items.count(), 1)
 
-        item = plist.purchaselistitem_set.first()
+        item = plist.items.first()
 
         self.assertEqual(item.resolutions.count(), 2)
         self.assertEqual(item.resolutions.get(vendor_product=vp1).quantity, 2)
@@ -152,9 +152,9 @@ class PurchasePlannerTestCase(TestCase):
             [vp1.product_uom, 36],
             ])
 
-        self.assertEqual(plist.purchaselistitem_set.count(), 1)
+        self.assertEqual(plist.items.count(), 1)
 
-        item = plist.purchaselistitem_set.first()
+        item = plist.items.first()
 
         self.assertEqual(item.resolutions.count(), 1)
         self.assertEqual(item.resolutions.get(vendor_product=vp1).quantity, 3)
@@ -200,9 +200,9 @@ class PurchasePlannerTestCase(TestCase):
             [vp1.product_uom, 36],
             ])
 
-        self.assertEqual(plist.purchaselistitem_set.count(), 1)
+        self.assertEqual(plist.items.count(), 1)
 
-        item = plist.purchaselistitem_set.first()
+        item = plist.items.first()
 
         self.assertEqual(item.resolutions.count(), 1)
         self.assertEqual(item.resolutions.get(vendor_product=vp2).quantity, 6)
@@ -232,9 +232,9 @@ class PurchasePlannerTestCase(TestCase):
             ])
 
 
-        self.assertEqual(plist.purchaselistitem_set.count(), 1)
+        self.assertEqual(plist.items.count(), 1)
 
-        item = plist.purchaselistitem_set.first()
+        item = plist.items.first()
 
         self.assertEqual(item.resolutions.count(), 2)
         self.assertEqual(item.resolutions.get(vendor_product=v1p1).quantity, 2)
@@ -277,9 +277,9 @@ class PurchasePlannerTestCase(TestCase):
             [vp2.product_uom, 10],
             ])
 
-        self.assertEqual(plist.purchaselistitem_set.count(), 2)
+        self.assertEqual(plist.items.count(), 2)
 
-        items = plist.purchaselistitem_set
+        items = plist.items
 
         item1 = items.get(product_uom__product=product1)
         self.assertEqual(item1.resolutions.count(), 1)
@@ -316,9 +316,9 @@ class PurchasePlannerTestCase(TestCase):
             [v2p2.product_uom, 13],
             ])
 
-        self.assertEqual(plist.purchaselistitem_set.count(), 2)
+        self.assertEqual(plist.items.count(), 2)
 
-        items = plist.purchaselistitem_set
+        items = plist.items
 
         item1 = items.get(product_uom__product=product1)
         self.assertEqual(item1.resolutions.count(), 1)
@@ -360,9 +360,9 @@ class PurchasePlannerTestCase(TestCase):
             [v1p2.product_uom, 13],
             ])
 
-        self.assertEqual(plist.purchaselistitem_set.count(), 2)
+        self.assertEqual(plist.items.count(), 2)
 
-        items = plist.purchaselistitem_set
+        items = plist.items
 
         item1 = items.get(product_uom__product=product1)
         self.assertEqual(item1.resolutions.count(), 1)
