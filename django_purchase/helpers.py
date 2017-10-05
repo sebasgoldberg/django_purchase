@@ -18,7 +18,7 @@ def create_or_update_vendor_product(vendor, vendor_product_name,
 
     try:
 
-        vproduct = vendor.vendorproduct_set.get(
+        vproduct = vendor.vproducts.get(
             name=vendor_product_name, quantity=content_quantity)
 
         if vproduct.product_uom.id != product_uom.id or \
@@ -32,7 +32,7 @@ def create_or_update_vendor_product(vendor, vendor_product_name,
 
     except VendorProduct.DoesNotExist:
 
-        vproduct = vendor.vendorproduct_set.create(
+        vproduct = vendor.vproducts.create(
             name=vendor_product_name,
             product_uom=product_uom,
             quantity=content_quantity
@@ -59,7 +59,7 @@ def create_or_update_vendor_shipping(vendor, shipping_method_name, price):
     
     shipping_method, _ = ShippingMethod.objects.get_or_create(
         name=shipping_method_name)
-    vshipping_method, _ = vendor.vendorshippingmethod_set.get_or_create(
+    vshipping_method, _ = vendor.shipping_methods.get_or_create(
         shipping_method=shipping_method)
     vshipping_method.set_price(price)
     return vshipping_method

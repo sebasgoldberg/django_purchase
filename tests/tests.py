@@ -378,3 +378,71 @@ class PurchasePlannerTestCase(TestCase):
 
         self.assertAlmostEqual(float(plist.get_total()), 13.1 + 2*7.1 + 32.3)
 
+class VendorShippingMethodTestCase(TestCase):
+    
+    def test_is_lower_price(self):
+        v = Vendor.objects.create()
+        vs1 = helpers.create_or_update_vendor_shipping(v, 'vs1', 10)
+        vs2 = helpers.create_or_update_vendor_shipping(v, 'vs2', 4)
+        self.assertFalse(vs1.is_lower_price())
+        self.assertTrue(vs2.is_lower_price())
+
+class PurchaseListTestCase(TestCase):
+
+    def test_pending_items(self):
+
+        vendor1 = Vendor.objects.create()
+        product1 = Product.objects.create()
+        product2 = Product.objects.create()
+
+        vp1 = helpers.create_or_update_vendor_product(
+            vendor1,
+            'VP1',
+            13.1,
+            12,
+            'UN',
+            product1
+        )
+
+        vp2 = helpers.create_or_update_vendor_product(
+            vendor1,
+            'VP2',
+            7.1,
+            6,
+            'UN',
+            product2
+        )
+
+        helpers.create_or_update_vendor_shipping(
+            vendor1,
+            'SM1',
+            32.3
+        )
+
+        plist = PurchaseList.objects.create()
+
+        self.assertEquals(plist.pending_items(), 0)
+
+        for product_uom, quantity in [
+            [vp1.product_uom, 29],
+            [vp2.product_uom, 10],
+            ]:
+            plist.items.create(
+                product_uom=product_uom, quantity=quantity)
+
+        self.assertEquals(plist.pending_items(), 2)
+
+        pp = PurchasePlanner()
+
+        pp.resolve_purchase(plist)
+
+        self.assertEquals(plist.pending_items(), 0)
+
+        plist.items.first().resolutions.all().delete()
+
+        self.assertEquals(plist.pending_items(), 1)
+
+        plist.items.first().delete()
+
+        self.assertEquals(plist.pending_items(), 0)
+

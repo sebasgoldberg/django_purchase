@@ -12,7 +12,7 @@ class UOM(models.Model):
     name = models.CharField(max_length=3, verbose_name=_('Nombre'), unique=True)
 
 class ProductUOM(models.Model):
-    product = models.ForeignKey(Product, verbose_name=_('Producto'), on_delete=models.PROTECT)
+    product = models.ForeignKey(Product, verbose_name=_('Producto'), on_delete=models.CASCADE)
     uom = models.ForeignKey(UOM, verbose_name=_('UM'), on_delete=models.PROTECT)
 
     class Meta:
@@ -34,7 +34,7 @@ class Vendor(models.Model):
                 instance__vendor=self)])
 
 class VendorProduct(models.Model):
-    vendor = models.ForeignKey(Vendor, verbose_name=_('Proveedor'), on_delete=models.PROTECT)
+    vendor = models.ForeignKey(Vendor, verbose_name=_('Proveedor'), on_delete=models.CASCADE, related_name='vproducts')
     name = models.CharField(max_length=255, verbose_name=_('Nombre'))
     product_uom = models.ForeignKey(ProductUOM, verbose_name=_('Producto y UM'), on_delete=models.PROTECT)
     quantity = models.DecimalField(max_digits=8, decimal_places=2,
@@ -62,7 +62,7 @@ class ShippingMethod(models.Model):
     name = models.CharField(max_length=100, verbose_name=_('Nombre'), unique=True)
 
 class VendorShippingMethod(models.Model):
-    vendor = models.ForeignKey(Vendor, verbose_name=_('Proveedor'), on_delete=models.PROTECT)
+    vendor = models.ForeignKey(Vendor, verbose_name=_('Proveedor'), on_delete=models.CASCADE, related_name='shipping_methods')
     shipping_method = models.ForeignKey(ShippingMethod, verbose_name=_('Forma de envío'), on_delete=models.PROTECT)
 
     def set_price(self, price):
@@ -78,12 +78,15 @@ class VendorShippingMethod(models.Model):
         return VendorShippingMethodCondition.current.get(
             instance=self).value
 
+    def is_lower_price(self):
+        return self.vendor.get_min_delivery_price() == self.get_price()
+
 
 class VendorProductCondition(Condition):
-    instance = models.ForeignKey(VendorProduct, verbose_name=_('Producto'), on_delete=models.PROTECT)
+    instance = models.ForeignKey(VendorProduct, verbose_name=_('Producto'), on_delete=models.CASCADE)
 
 class VendorShippingMethodCondition(Condition):
-    instance = models.ForeignKey(VendorShippingMethod, verbose_name=_('Forma de envío'), on_delete=models.PROTECT)
+    instance = models.ForeignKey(VendorShippingMethod, verbose_name=_('Forma de envío'), on_delete=models.CASCADE)
 
 
 class PurchaseList(models.Model):
@@ -111,14 +114,21 @@ class PurchaseList(models.Model):
         return total
 
     def get_total(self):
-        
         return self.calc_total()
+
+    def pending_items(self):
+        result = 0
+        for i in self.items.all():
+            if not i.is_solved():
+                result += 1
+        return result
 
 
 class PurchaseListItem(models.Model):
-    purchase_list = models.ForeignKey(PurchaseList, verbose_name=_('Lista de compras'), on_delete=models.PROTECT, 
+    purchase_list = models.ForeignKey(PurchaseList, verbose_name=_('Lista de compras'), on_delete=models.CASCADE, 
         related_name='items')
-    product_uom = models.ForeignKey(ProductUOM, verbose_name=_('Producto y UM'), on_delete=models.PROTECT)
+    product_uom = models.ForeignKey(ProductUOM, verbose_name=_('Producto y UM'), on_delete=models.PROTECT,
+        related_name='plist_items')
     quantity = models.DecimalField(max_digits=8, decimal_places=2,
         verbose_name=_('Cantidad'))
 
@@ -127,13 +137,28 @@ class PurchaseListItem(models.Model):
             item=self,
             vendor_product=vproduct,
             quantity=quantity
-            )       
-        
+            )
+
+    def get_solved_quantity(self): # @todo Test.
+        """
+        Gets the sum of uom quantities of self.resolutions.
+        """
+        return sum([r.get_uom_quantity() for r in self.resolutions.all()])
+
+    def is_solved(self): # @todo Test.
+        return self.quantity <= self.get_solved_quantity()
+
+    def get_surplus_quantity(self): # @todo Test.
+        result = self.get_solved_quantity() - self.quantity
+        if result < 0:
+            return 0
+        return result
 
 class PurchaseListItemResolution(models.Model):
-    item = models.ForeignKey(PurchaseListItem, on_delete=models.PROTECT,
-        editable=False, related_name='resolutions')
-    vendor_product = models.ForeignKey(VendorProduct, verbose_name=_('Producto Proveedor'), on_delete=models.PROTECT)
+    item = models.ForeignKey(PurchaseListItem, on_delete=models.CASCADE,
+        related_name='resolutions')
+    vendor_product = models.ForeignKey(VendorProduct, verbose_name=_('Producto Proveedor'), on_delete=models.PROTECT,
+        related_name='resolutions')
     quantity = models.DecimalField(max_digits=8, decimal_places=2,
         verbose_name=_('Cantidad'))
 
@@ -142,3 +167,7 @@ class PurchaseListItemResolution(models.Model):
 
     def get_total(self):
         return self.vendor_product.get_price()*self.quantity
+
+    def get_uom_quantity(self):
+        return self.quantity * self.vendor_product.quantity
+
