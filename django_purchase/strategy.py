@@ -30,11 +30,11 @@ class PurchasePlanner:
         vendors = {}
         vproducts = {}
 
-        for item in purchase_list.get_items():
+        for item in purchase_list.get_items_to_solve():
 
             items[item.id] = item
 
-            for vproduct in item.product_uom.get_vendors_products():
+            for vproduct in purchase_list.get_vendors_for_item(item):
 
                 vendor = vproduct.vendor
 
@@ -57,7 +57,7 @@ class PurchasePlanner:
                     item.id, {})
                 V_I_VP[vendor.id][item.id][vproduct.id] = \
                     LpVariable("CANTIDAD_PROD_%s_DEL_PROVEEDOR_%s_PARA_ITEM_%s" %
-                        (vproduct.id, item.id, vendor.id), 0, None, LpInteger)
+                        (vproduct.id, vendor.id, item.id), 0, None, LpInteger)
                 
                 I_VP[item.id] = I_VP.get( item.id, {} )
                 I_VP[item.id][vproduct.id] = \
@@ -85,7 +85,7 @@ class PurchasePlanner:
                 for vproduct_id, quan in vproducts_for_item.items()]) <= 0, \
                     "La cantidad a comprar para el item %s debe ser mayor o igual a la cantidad solicitada" % item_id
 
-        #model.writeLP("/tmp/agroeco.lp")
+        model.writeLP("/tmp/agroeco.lp")
 
         # Redirige la salida a /dev/null
         model.setSolver()

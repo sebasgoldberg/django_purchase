@@ -18,8 +18,10 @@ class ProductUOM(models.Model):
     class Meta:
         unique_together = (("product", "uom"),)
 
-    def get_vendors_products(self):
-        return self.vendorproduct_set.all()
+    def get_vendors_products(self, vendors=None):
+        if vendors is None:
+            return self.vendorproduct_set.all()
+        return self.vendorproduct_set.filter(vendor__in=vendors)
 
 
 class Vendor(models.Model):
@@ -28,7 +30,7 @@ class Vendor(models.Model):
         delivery_prices = VendorShippingMethodCondition.current.filter(
             instance__vendor=self)
         if delivery_prices.count() == 0:
-            raise ValidationError(_('Debe ser definida la forma de envio y su precio para el proveedor %s') % self)
+            raise ValidationError(_('Debe ser definida la forma de envio y su precio para el proveedor %s') % self.partner.name)
         return min([x.value for x in 
             VendorShippingMethodCondition.current.filter(
                 instance__vendor=self)])
@@ -92,10 +94,35 @@ class VendorShippingMethodCondition(Condition):
 class PurchaseList(models.Model):
     name = models.CharField(max_length=100, verbose_name=_('Nombre'), null=True)
     date = models.DateField(_('Fecha'), default=date.today)
+    filter_vendors = models.BooleanField(_('Solo Proveedores Seleccionados'), default=False)
+    vendors = models.ManyToManyField(Vendor)
 
     def get_items(self):
         return self.items.all()
 
+    def get_items_to_solve(self):
+        if self.filter_vendors:
+            return self.items.filter(product_uom__vendorproduct__vendor__in=self.vendors.all()).distinct()
+        return self.get_items()
+
+    def get_vendors_for_item(self, item):
+        if self.filter_vendors:
+            return item.product_uom.get_vendors_products(self.vendors.all())
+        return item.product_uom.get_vendors_products()
+
+    def get_vendors_subtotals(self):
+
+        vendors = {}
+
+        for i in self.get_items():
+            for r in i.resolutions.all():
+                if r.vendor_product.vendor.id not in vendors:
+                    vendors[r.vendor_product.vendor.id] = 0
+                vendors[r.vendor_product.vendor.id] += r.vendor_product.get_price() * r.quantity
+
+        return vendors
+
+        
     def calc_total(self):
 
         total = 0
@@ -146,13 +173,10 @@ class PurchaseListItem(models.Model):
         return sum([r.get_uom_quantity() for r in self.resolutions.all()])
 
     def is_solved(self): # @todo Test.
-        return self.quantity <= self.get_solved_quantity()
+        return self.quantity > 0 and self.quantity <= self.get_solved_quantity()
 
     def get_surplus_quantity(self): # @todo Test.
-        result = self.get_solved_quantity() - self.quantity
-        if result < 0:
-            return 0
-        return result
+        return self.get_solved_quantity() - self.quantity
 
 class PurchaseListItemResolution(models.Model):
     item = models.ForeignKey(PurchaseListItem, on_delete=models.CASCADE,

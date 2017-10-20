@@ -41,9 +41,17 @@ def create_or_update_vendor_product(vendor, vendor_product_name,
 
     return vproduct
 
-def create_purchase_list_and_resolve(products_uom_and_quantities):
+def create_purchase_list_and_resolve(products_uom_and_quantities, vendors=None):
 
-    plist = PurchaseList.objects.create()
+    plist = None
+    if vendors is None:
+        plist = PurchaseList.objects.create()
+    else:
+        plist = PurchaseList.objects.create(
+            filter_vendors=True,
+            )
+        plist.vendors = vendors
+        plist.save()
 
     for product_uom, quantity in products_uom_and_quantities:
         plist.items.create(

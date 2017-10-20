@@ -292,6 +292,47 @@ class PurchasePlannerTestCase(TestCase):
 
         self.assertAlmostEqual(float(plist.get_total()), 3*13.1 + 2*7.1 + 32.3)
 
+    def test_vendor_restriction(self):
+
+        vendor1 = Vendor.objects.create()
+        vendor2 = Vendor.objects.create()
+        product1 = Product.objects.create()
+        product2 = Product.objects.create()
+
+        v1p1, v2p2 = helpers.map_multi(
+            helpers.create_or_update_vendor_product, [
+                [ vendor1, 'VP1', 13.1, 12, 'UN', product1 ],
+                [ vendor2, 'VP2', 7.1, 7, 'UN', product2 ],
+        ])
+
+        helpers.map_multi(
+            helpers.create_or_update_vendor_shipping, [
+                [ vendor1, 'SM1', 32.3 ],
+                [ vendor2, 'SM2', 32.3 ],
+        ])
+
+        plist = helpers.create_purchase_list_and_resolve([
+            [v1p1.product_uom, 11],
+            [v2p2.product_uom, 13],
+            ],
+            [vendor1.id])
+
+        self.assertEqual(plist.items.count(), 2)
+
+        items = plist.items
+
+        item1 = items.get(product_uom__product=product1)
+        self.assertEqual(item1.resolutions.count(), 1)
+        r1 = item1.resolutions.first()
+        self.assertEqual(r1.quantity, 1)
+        self.assertEqual(r1.vendor_product.id, v1p1.id)
+
+        item2 = items.get(product_uom__product=product2)
+        self.assertEqual(item2.resolutions.count(), 0)
+
+        self.assertAlmostEqual(float(plist.get_total()), 13.1 + 32.3)
+
+ 
     def test_two_products_different_vendors(self):
 
         vendor1 = Vendor.objects.create()
